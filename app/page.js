@@ -11,19 +11,16 @@ export default function Home() {
   const paletteRef = useRef(null);
 
   // --- OBTENER VALORES RGB ACTUALES ---
-  // Si el hex es válido, lo convertimos a [R, G, B]. Si no, por defecto [0,0,0]
   const [r, g, b] = chroma.valid(baseColor) ? chroma(baseColor).rgb() : [0, 0, 0];
 
   // --- MANEJADOR DE LOS DESLIZADORES ---
   const handleRgbChange = (index, value) => {
     const newRgb = [r, g, b];
-    newRgb[index] = Number(value); // Actualiza solo el canal que se movió
+    newRgb[index] = Number(value); 
     
     try {
       setBaseColor(chroma(newRgb).hex());
-    } catch (e) {
-      // Ignorar errores si el color está transicionando extrañamente
-    }
+    } catch (e) {}
   };
 
   // --- 1. LÓGICA DE PALETAS LINEALES ---
@@ -100,13 +97,15 @@ export default function Home() {
               <select 
                 value={harmony}
                 onChange={(e) => setHarmony(e.target.value)}
-                className="border-gray-300 rounded-lg shadow-sm focus:border-blue-500 focus:ring-blue-500 bg-gray-50 p-2.5 outline-none w-full"
+                /* Se agregó text-gray-900 explícito aquí */
+                className="border-gray-300 rounded-lg shadow-sm focus:border-blue-500 focus:ring-blue-500 bg-gray-50 text-gray-900 p-2.5 outline-none w-full"
               >
-                <option value="funcional">Funcional (RYB)</option>
-                <option value="monocromatico">Monocromático</option>
-                <option value="analogo">Análogo</option>
-                <option value="complementario">Complementario</option>
-                <option value="triadico">Triádico</option>
+                {/* Se agregó text-gray-900 y bg-white a cada opción */}
+                <option value="funcional" className="text-gray-900 bg-white">Funcional (RYB)</option>
+                <option value="monocromatico" className="text-gray-900 bg-white">Monocromático</option>
+                <option value="analogo" className="text-gray-900 bg-white">Análogo</option>
+                <option value="complementario" className="text-gray-900 bg-white">Complementario</option>
+                <option value="triadico" className="text-gray-900 bg-white">Triádico</option>
               </select>
             </div>
 
@@ -116,10 +115,12 @@ export default function Home() {
                 <select 
                   value={colorCount}
                   onChange={(e) => setColorCount(Number(e.target.value))}
-                  className="border-gray-300 rounded-lg shadow-sm focus:border-blue-500 focus:ring-blue-500 bg-gray-50 p-2.5 outline-none w-full"
+                  /* Se agregó text-gray-900 explícito aquí */
+                  className="border-gray-300 rounded-lg shadow-sm focus:border-blue-500 focus:ring-blue-500 bg-gray-50 text-gray-900 p-2.5 outline-none w-full"
                 >
                   {[5, 6, 7, 8, 9, 10].map(num => (
-                    <option key={num} value={num}>{num}</option>
+                    /* Se agregó text-gray-900 y bg-white a cada opción */
+                    <option key={num} value={num} className="text-gray-900 bg-white">{num}</option>
                   ))}
                 </select>
               </div>
