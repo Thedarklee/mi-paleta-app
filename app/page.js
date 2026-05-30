@@ -10,6 +10,22 @@ export default function Home() {
   const [colorCount, setColorCount] = useState(5);
   const paletteRef = useRef(null);
 
+  // --- OBTENER VALORES RGB ACTUALES ---
+  // Si el hex es válido, lo convertimos a [R, G, B]. Si no, por defecto [0,0,0]
+  const [r, g, b] = chroma.valid(baseColor) ? chroma(baseColor).rgb() : [0, 0, 0];
+
+  // --- MANEJADOR DE LOS DESLIZADORES ---
+  const handleRgbChange = (index, value) => {
+    const newRgb = [r, g, b];
+    newRgb[index] = Number(value); // Actualiza solo el canal que se movió
+    
+    try {
+      setBaseColor(chroma(newRgb).hex());
+    } catch (e) {
+      // Ignorar errores si el color está transicionando extrañamente
+    }
+  };
+
   // --- 1. LÓGICA DE PALETAS LINEALES ---
   const generatePalette = (color, rule, count) => {
     try {
@@ -69,92 +85,137 @@ export default function Home() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center p-4 sm:p-8">
+    <div className="min-h-screen bg-[#f5f5f0] flex flex-col items-center justify-center p-4 sm:p-8">
       <h1 className="text-3xl font-bold mb-8 text-gray-900 text-center">Generador de Paletas</h1>
       
-      {/* Controles */}
-      <div className="mb-8 flex flex-col sm:flex-row flex-wrap justify-center items-center gap-6 bg-white p-4 rounded-xl shadow-sm border border-gray-100">
+      {/* Contenedor Principal de Controles */}
+      <div className="mb-8 flex flex-col lg:flex-row items-center lg:items-start gap-8 bg-white p-6 rounded-2xl shadow-sm border border-gray-100 w-full max-w-4xl">
         
-        {/* Color Base */}
-        <div className="flex items-center gap-3">
-          <label className="font-medium text-gray-700 text-sm uppercase tracking-wide">Color Base</label>
-          <input 
-            type="color" 
-            value={baseColor} 
-            onChange={(e) => setBaseColor(e.target.value)}
-            className="w-10 h-10 cursor-pointer border-0 rounded bg-transparent"
-          />
-        </div>
-        
-        <div className="hidden sm:block w-px h-8 bg-gray-200"></div>
-
-        {/* Armonía */}
-        <div className="flex items-center gap-3">
-          <label className="font-medium text-gray-700 text-sm uppercase tracking-wide">Tipo</label>
-          <select 
-            value={harmony}
-            onChange={(e) => setHarmony(e.target.value)}
-            className="border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring-blue-500 bg-gray-50 p-2 outline-none"
-          >
-            <option value="funcional">Funcional (RYB)</option>
-            <option value="monocromatico">Monocromático</option>
-            <option value="analogo">Análogo</option>
-            <option value="complementario">Complementario</option>
-            <option value="triadico">Triádico</option>
-          </select>
-        </div>
-
-        {/* Cantidad de Colores (Oculto en modo funcional) */}
-        {harmony !== 'funcional' && (
-          <>
-            <div className="hidden sm:block w-px h-8 bg-gray-200"></div>
-            <div className="flex items-center gap-3">
-              <label className="font-medium text-gray-700 text-sm uppercase tracking-wide">Colores</label>
+        {/* Columna Izquierda: Selectores de Modo y Color */}
+        <div className="flex flex-col gap-6 w-full lg:w-1/2">
+          {/* Armonía y Cantidad */}
+          <div className="flex flex-col sm:flex-row gap-4">
+            <div className="flex-1 flex flex-col gap-2">
+              <label className="font-medium text-gray-700 text-xs uppercase tracking-wide">Tipo de Paleta</label>
               <select 
-                value={colorCount}
-                onChange={(e) => setColorCount(Number(e.target.value))}
-                className="border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring-blue-500 bg-gray-50 p-2 outline-none"
+                value={harmony}
+                onChange={(e) => setHarmony(e.target.value)}
+                className="border-gray-300 rounded-lg shadow-sm focus:border-blue-500 focus:ring-blue-500 bg-gray-50 p-2.5 outline-none w-full"
               >
-                {[5, 6, 7, 8, 9, 10].map(num => (
-                  <option key={num} value={num}>{num}</option>
-                ))}
+                <option value="funcional">Funcional (RYB)</option>
+                <option value="monocromatico">Monocromático</option>
+                <option value="analogo">Análogo</option>
+                <option value="complementario">Complementario</option>
+                <option value="triadico">Triádico</option>
               </select>
             </div>
-          </>
-        )}
+
+            {harmony !== 'funcional' && (
+              <div className="flex-1 flex flex-col gap-2">
+                <label className="font-medium text-gray-700 text-xs uppercase tracking-wide">Colores</label>
+                <select 
+                  value={colorCount}
+                  onChange={(e) => setColorCount(Number(e.target.value))}
+                  className="border-gray-300 rounded-lg shadow-sm focus:border-blue-500 focus:ring-blue-500 bg-gray-50 p-2.5 outline-none w-full"
+                >
+                  {[5, 6, 7, 8, 9, 10].map(num => (
+                    <option key={num} value={num}>{num}</option>
+                  ))}
+                </select>
+              </div>
+            )}
+          </div>
+
+          {/* Color Picker Nativo + Hex */}
+          <div className="flex items-center gap-4 bg-gray-50 p-3 rounded-xl border border-gray-100">
+            <input 
+              type="color" 
+              value={baseColor} 
+              onChange={(e) => setBaseColor(e.target.value)}
+              className="w-14 h-14 cursor-pointer border-0 rounded-lg bg-transparent"
+            />
+            <div className="flex flex-col">
+              <span className="text-xs font-bold text-gray-400 uppercase tracking-wider">HEX</span>
+              <span className="font-mono text-lg font-bold text-gray-800 uppercase">{baseColor}</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Separador (solo en escritorio) */}
+        <div className="hidden lg:block w-px h-32 bg-gray-200"></div>
+
+        {/* Columna Derecha: Deslizadores RGB/RYB */}
+        <div className="flex flex-col gap-4 w-full lg:w-1/2">
+          <label className="font-medium text-gray-700 text-xs uppercase tracking-wide">
+            Ajuste Fino ({harmony === 'funcional' ? 'RYB' : 'RGB'})
+          </label>
+          
+          {/* Deslizador R (Rojo) */}
+          <div className="flex items-center gap-3">
+            <span className="w-4 text-sm font-bold text-gray-500">R</span>
+            <input 
+              type="range" min="0" max="255" value={r} 
+              onChange={(e) => handleRgbChange(0, e.target.value)}
+              className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-red-500"
+            />
+            <span className="w-8 text-sm font-mono text-right text-gray-600">{r}</span>
+          </div>
+
+          {/* Deslizador G/Y (Verde o Amarillo) */}
+          <div className="flex items-center gap-3">
+            <span className="w-4 text-sm font-bold text-gray-500">
+              {harmony === 'funcional' ? 'Y' : 'G'}
+            </span>
+            <input 
+              type="range" min="0" max="255" value={g} 
+              onChange={(e) => handleRgbChange(1, e.target.value)}
+              className={`w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer ${harmony === 'funcional' ? 'accent-amber-400' : 'accent-green-500'}`}
+            />
+            <span className="w-8 text-sm font-mono text-right text-gray-600">{g}</span>
+          </div>
+
+          {/* Deslizador B (Azul) */}
+          <div className="flex items-center gap-3">
+            <span className="w-4 text-sm font-bold text-gray-500">B</span>
+            <input 
+              type="range" min="0" max="255" value={b} 
+              onChange={(e) => handleRgbChange(2, e.target.value)}
+              className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-blue-500"
+            />
+            <span className="w-8 text-sm font-mono text-right text-gray-600">{b}</span>
+          </div>
+        </div>
       </div>
 
-      {/* Contenedor de la Paleta Unificado (Fila horizontal para todos) */}
+      {/* Contenedor de la Paleta Unificado */}
       <div 
         ref={paletteRef} 
-        className="flex w-full max-w-4xl h-48 rounded-xl overflow-hidden shadow-lg mb-8 bg-white p-2"
+        className="flex w-full max-w-4xl h-48 rounded-2xl overflow-hidden shadow-lg mb-8 bg-white p-2 border border-gray-100"
       >
         {harmony === 'funcional' 
-          ? /* Renderizado en fila para la paleta Funcional */
-            funcColors.map((item, index) => (
+          ? funcColors.map((item, index) => (
               <div 
                 key={index} 
-                className="flex-1 flex flex-col items-center justify-end pb-4 transition-all hover:flex-[1.5] group"
+                className="flex-1 flex flex-col items-center justify-end pb-4 transition-all hover:flex-[1.3] group"
                 style={{ backgroundColor: item.hex }}
               >
                 <div className="flex flex-col items-center gap-1 opacity-0 group-hover:opacity-100 sm:opacity-100 transition-opacity">
-                  <span className="bg-black/50 text-white px-2 py-0.5 rounded text-[9px] font-bold uppercase tracking-widest shadow-sm">
+                  <span className="bg-black/40 backdrop-blur-sm text-white px-2 py-0.5 rounded text-[9px] font-bold uppercase tracking-widest shadow-sm">
                     {item.label}
                   </span>
-                  <span className="bg-white/90 px-2 py-1 rounded text-[10px] sm:text-xs font-mono text-gray-900 font-bold uppercase shadow-sm">
+                  <span className="bg-white/95 px-2 py-1 rounded text-[10px] sm:text-xs font-mono text-gray-900 font-bold uppercase shadow-sm">
                     {item.hex}
                   </span>
                 </div>
               </div>
             ))
-          : /* Renderizado estándar para el resto */
-            palette.map((color, index) => (
+          : palette.map((color, index) => (
               <div 
                 key={index} 
-                className="flex-1 flex items-end justify-center pb-4 transition-all hover:flex-[1.5] group"
+                className="flex-1 flex items-end justify-center pb-4 transition-all hover:flex-[1.3] group"
                 style={{ backgroundColor: color }}
               >
-                <span className="bg-white/90 px-1 sm:px-2 py-1 rounded text-[10px] sm:text-xs font-mono text-gray-900 font-bold uppercase shadow-sm opacity-0 group-hover:opacity-100 sm:opacity-100 transition-opacity">
+                <span className="bg-white/95 px-1 sm:px-2 py-1 rounded text-[10px] sm:text-xs font-mono text-gray-900 font-bold uppercase shadow-sm opacity-0 group-hover:opacity-100 sm:opacity-100 transition-opacity">
                   {color}
                 </span>
               </div>
@@ -165,7 +226,7 @@ export default function Home() {
       {/* Botón de Exportar */}
       <button 
         onClick={handleExport}
-        className="bg-gray-900 text-white px-8 py-3 rounded-lg font-medium hover:bg-gray-800 transition-colors shadow-md flex items-center gap-2"
+        className="bg-gray-900 text-white px-8 py-3 rounded-xl font-medium hover:bg-gray-800 transition-all shadow-md hover:shadow-lg hover:-translate-y-0.5 flex items-center gap-2"
       >
         Exportar Paleta a PNG
       </button>
