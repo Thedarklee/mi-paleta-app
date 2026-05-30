@@ -8,12 +8,15 @@ export default function Home() {
   const [baseColor, setBaseColor] = useState('#003e79');
   const [harmony, setHarmony] = useState('funcional');
   const [colorCount, setColorCount] = useState(5);
+  
+  // --- NUEVOS ESTADOS PARA CONTROLAR LA VISIBILIDAD ---
+  const [activeColor, setActiveColor] = useState(null); // Guarda el índice del color tocado
+  const [isExporting, setIsExporting] = useState(false); // Avisa si se está tomando la foto
+  
   const paletteRef = useRef(null);
 
-  // --- OBTENER VALORES RGB ACTUALES ---
   const [r, g, b] = chroma.valid(baseColor) ? chroma(baseColor).rgb() : [0, 0, 0];
 
-  // --- MANEJADOR DE LOS DESLIZADORES ---
   const handleRgbChange = (index, value) => {
     const newRgb = [r, g, b];
     newRgb[index] = Number(value); 
@@ -23,7 +26,6 @@ export default function Home() {
     } catch (e) {}
   };
 
-  // --- 1. LÓGICA DE PALETAS LINEALES ---
   const generatePalette = (color, rule, count) => {
     try {
       const c = chroma(color);
@@ -47,7 +49,6 @@ export default function Home() {
     }
   };
 
-  // --- 2. LÓGICA DE PALETA FUNCIONAL RYB ---
   const getFunctionalColors = (color) => {
     try {
       const c = chroma(color);
@@ -66,41 +67,48 @@ export default function Home() {
   const palette = generatePalette(baseColor, harmony, colorCount);
   const funcColors = getFunctionalColors(baseColor);
 
+  // --- FUNCIÓN DE EXPORTACIÓN ACTUALIZADA ---
   const handleExport = () => {
     if (paletteRef.current === null) return;
     
-    toPng(paletteRef.current, { cacheBust: true })
-      .then((dataUrl) => {
-        const link = document.createElement('a');
-        link.download = `paleta-${harmony}.png`;
-        link.href = dataUrl;
-        link.click();
-      })
-      .catch((err) => {
-        console.error('Error al exportar la imagen:', err);
-      });
+    // 1. Encendemos todos los textos
+    setIsExporting(true);
+    
+    // 2. Le damos a React un instante (150ms) para pintar los textos en la pantalla
+    setTimeout(() => {
+      toPng(paletteRef.current, { cacheBust: true })
+        .then((dataUrl) => {
+          const link = document.createElement('a');
+          link.download = `paleta-${harmony}.png`;
+          link.href = dataUrl;
+          link.click();
+        })
+        .catch((err) => {
+          console.error('Error al exportar la imagen:', err);
+        })
+        .finally(() => {
+          // 3. Volvemos a ocultar los textos tras tomar la foto
+          setIsExporting(false);
+          setActiveColor(null);
+        });
+    }, 150);
   };
 
   return (
     <div className="min-h-screen bg-[#f5f5f0] flex flex-col items-center justify-center p-4 sm:p-8">
       <h1 className="text-3xl font-bold mb-8 text-gray-900 text-center">Generador de Paletas</h1>
       
-      {/* Contenedor Principal de Controles */}
       <div className="mb-8 flex flex-col lg:flex-row items-center lg:items-start gap-8 bg-white p-6 rounded-2xl shadow-sm border border-gray-100 w-full max-w-4xl">
         
-        {/* Columna Izquierda: Selectores de Modo y Color */}
         <div className="flex flex-col gap-6 w-full lg:w-1/2">
-          {/* Armonía y Cantidad */}
           <div className="flex flex-col sm:flex-row gap-4">
             <div className="flex-1 flex flex-col gap-2">
               <label className="font-medium text-gray-700 text-xs uppercase tracking-wide">Tipo de Paleta</label>
               <select 
                 value={harmony}
                 onChange={(e) => setHarmony(e.target.value)}
-                /* Se agregó text-gray-900 explícito aquí */
                 className="border-gray-300 rounded-lg shadow-sm focus:border-blue-500 focus:ring-blue-500 bg-gray-50 text-gray-900 p-2.5 outline-none w-full"
               >
-                {/* Se agregó text-gray-900 y bg-white a cada opción */}
                 <option value="funcional" className="text-gray-900 bg-white">Funcional (RYB)</option>
                 <option value="monocromatico" className="text-gray-900 bg-white">Monocromático</option>
                 <option value="analogo" className="text-gray-900 bg-white">Análogo</option>
@@ -115,11 +123,9 @@ export default function Home() {
                 <select 
                   value={colorCount}
                   onChange={(e) => setColorCount(Number(e.target.value))}
-                  /* Se agregó text-gray-900 explícito aquí */
                   className="border-gray-300 rounded-lg shadow-sm focus:border-blue-500 focus:ring-blue-500 bg-gray-50 text-gray-900 p-2.5 outline-none w-full"
                 >
                   {[5, 6, 7, 8, 9, 10].map(num => (
-                    /* Se agregó text-gray-900 y bg-white a cada opción */
                     <option key={num} value={num} className="text-gray-900 bg-white">{num}</option>
                   ))}
                 </select>
@@ -127,7 +133,6 @@ export default function Home() {
             )}
           </div>
 
-          {/* Color Picker Nativo + Hex */}
           <div className="flex items-center gap-4 bg-gray-50 p-3 rounded-xl border border-gray-100">
             <input 
               type="color" 
@@ -142,16 +147,13 @@ export default function Home() {
           </div>
         </div>
 
-        {/* Separador (solo en escritorio) */}
         <div className="hidden lg:block w-px h-32 bg-gray-200"></div>
 
-        {/* Columna Derecha: Deslizadores RGB/RYB */}
         <div className="flex flex-col gap-4 w-full lg:w-1/2">
           <label className="font-medium text-gray-700 text-xs uppercase tracking-wide">
             Ajuste Fino ({harmony === 'funcional' ? 'RYB' : 'RGB'})
           </label>
           
-          {/* Deslizador R (Rojo) */}
           <div className="flex items-center gap-3">
             <span className="w-4 text-sm font-bold text-gray-500">R</span>
             <input 
@@ -162,7 +164,6 @@ export default function Home() {
             <span className="w-8 text-sm font-mono text-right text-gray-600">{r}</span>
           </div>
 
-          {/* Deslizador G/Y (Verde o Amarillo) */}
           <div className="flex items-center gap-3">
             <span className="w-4 text-sm font-bold text-gray-500">
               {harmony === 'funcional' ? 'Y' : 'G'}
@@ -175,7 +176,6 @@ export default function Home() {
             <span className="w-8 text-sm font-mono text-right text-gray-600">{g}</span>
           </div>
 
-          {/* Deslizador B (Azul) */}
           <div className="flex items-center gap-3">
             <span className="w-4 text-sm font-bold text-gray-500">B</span>
             <input 
@@ -188,7 +188,6 @@ export default function Home() {
         </div>
       </div>
 
-      {/* Contenedor de la Paleta Unificado */}
       <div 
         ref={paletteRef} 
         className="flex w-full max-w-4xl h-48 rounded-2xl overflow-hidden shadow-lg mb-8 bg-white p-2 border border-gray-100"
@@ -196,11 +195,14 @@ export default function Home() {
         {harmony === 'funcional' 
           ? funcColors.map((item, index) => (
               <div 
-                key={index} 
-                className="flex-1 flex flex-col items-center justify-end pb-4 transition-all hover:flex-[1.3] group"
+                key={index}
+                /* Al hacer clic, guardamos este índice como el activo */ 
+                onClick={() => setActiveColor(activeColor === index ? null : index)}
+                className="flex-1 flex flex-col items-center justify-end pb-4 transition-all hover:flex-[1.3] group cursor-pointer"
                 style={{ backgroundColor: item.hex }}
               >
-                <div className="flex flex-col items-center gap-1 opacity-0 group-hover:opacity-100 sm:opacity-100 transition-opacity">
+                {/* Lógica maestra: Se muestra SI está exportando, SI fue tocado, O SI el mouse está encima */}
+                <div className={`flex flex-col items-center gap-1 transition-opacity ${(isExporting || activeColor === index) ? 'opacity-100' : 'opacity-0'} group-hover:opacity-100`}>
                   <span className="bg-black/40 backdrop-blur-sm text-white px-2 py-0.5 rounded text-[9px] font-bold uppercase tracking-widest shadow-sm">
                     {item.label}
                   </span>
@@ -212,11 +214,14 @@ export default function Home() {
             ))
           : palette.map((color, index) => (
               <div 
-                key={index} 
-                className="flex-1 flex items-end justify-center pb-4 transition-all hover:flex-[1.3] group"
+                key={index}
+                /* Al hacer clic, guardamos este índice como el activo */ 
+                onClick={() => setActiveColor(activeColor === index ? null : index)}
+                className="flex-1 flex items-end justify-center pb-4 transition-all hover:flex-[1.3] group cursor-pointer"
                 style={{ backgroundColor: color }}
               >
-                <span className="bg-white/95 px-1 sm:px-2 py-1 rounded text-[10px] sm:text-xs font-mono text-gray-900 font-bold uppercase shadow-sm opacity-0 group-hover:opacity-100 sm:opacity-100 transition-opacity">
+                {/* Lógica maestra: Se muestra SI está exportando, SI fue tocado, O SI el mouse está encima */}
+                <span className={`bg-white/95 px-1 sm:px-2 py-1 rounded text-[10px] sm:text-xs font-mono text-gray-900 font-bold uppercase shadow-sm transition-opacity ${(isExporting || activeColor === index) ? 'opacity-100' : 'opacity-0'} group-hover:opacity-100`}>
                   {color}
                 </span>
               </div>
@@ -224,12 +229,12 @@ export default function Home() {
         }
       </div>
 
-      {/* Botón de Exportar */}
       <button 
         onClick={handleExport}
-        className="bg-gray-900 text-white px-8 py-3 rounded-xl font-medium hover:bg-gray-800 transition-all shadow-md hover:shadow-lg hover:-translate-y-0.5 flex items-center gap-2"
+        disabled={isExporting} // Evitamos que el usuario haga spam de clics
+        className="bg-gray-900 text-white px-8 py-3 rounded-xl font-medium hover:bg-gray-800 transition-all shadow-md hover:shadow-lg hover:-translate-y-0.5 flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
       >
-        Exportar Paleta a PNG
+        {isExporting ? 'Procesando imagen...' : 'Exportar Paleta a PNG'}
       </button>
     </div>
   );
