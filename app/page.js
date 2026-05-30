@@ -5,12 +5,12 @@ import chroma from 'chroma-js';
 import { toPng } from 'html-to-image';
 
 export default function Home() {
-  const [baseColor, setBaseColor] = useState('#003e79'); // Empezamos con el azul de tu ejemplo
-  const [harmony, setHarmony] = useState('funcional'); // Nueva opción por defecto
+  const [baseColor, setBaseColor] = useState('#003e79');
+  const [harmony, setHarmony] = useState('funcional');
   const [colorCount, setColorCount] = useState(5);
   const paletteRef = useRef(null);
 
-  // --- 1. LÓGICA DE PALETAS LINEALES (5 a 10 colores) ---
+  // --- 1. LÓGICA DE PALETAS LINEALES ---
   const generatePalette = (color, rule, count) => {
     try {
       const c = chroma(color);
@@ -34,19 +34,19 @@ export default function Home() {
     }
   };
 
-  // --- 2. LÓGICA DE PALETA FUNCIONAL RYB (La Cruz) ---
+  // --- 2. LÓGICA DE PALETA FUNCIONAL RYB ---
   const getFunctionalColors = (color) => {
     try {
       const c = chroma(color);
-      return {
-        main: c.hex(),
-        similar: c.brighten(0.8).saturate(1.5).hex(), // Más vivo y brillante
-        shadow: c.darken(1.5).desaturate(0.5).hex(),  // Más oscuro y apagado
-        complement: c.set('hsl.h', '+180').hex(),     // Opuesto digital
-        contrast: c.set('hsl.h', '+130').brighten(0.5).hex() // Triádico ajustado
-      };
+      return [
+        { label: 'SHADOW', hex: c.darken(1.5).desaturate(0.5).hex() },
+        { label: 'MAIN', hex: c.hex() },
+        { label: 'SIMILAR', hex: c.brighten(0.8).saturate(1.5).hex() },
+        { label: 'COMPLEMENT', hex: c.set('hsl.h', '+180').hex() },
+        { label: 'CONTRAST', hex: c.set('hsl.h', '+130').brighten(0.5).hex() }
+      ];
     } catch (error) {
-      return { main: '#ccc', similar: '#ccc', shadow: '#ccc', complement: '#ccc', contrast: '#ccc' };
+      return Array(5).fill({ label: 'ERROR', hex: '#cccccc' });
     }
   };
 
@@ -56,8 +56,7 @@ export default function Home() {
   const handleExport = () => {
     if (paletteRef.current === null) return;
     
-    // Añadimos backgroundColor white para que la cruz no tenga fondo transparente al exportar
-    toPng(paletteRef.current, { cacheBust: true, backgroundColor: '#ffffff' })
+    toPng(paletteRef.current, { cacheBust: true })
       .then((dataUrl) => {
         const link = document.createElement('a');
         link.download = `paleta-${harmony}.png`;
@@ -69,25 +68,8 @@ export default function Home() {
       });
   };
 
-  // --- COMPONENTE DE BLOQUE PARA LA CRUZ ---
-  const ColorBlock = ({ title, color, isMain }) => (
-    <div className="flex flex-col items-center gap-2">
-      <span className="text-[10px] sm:text-xs font-bold text-gray-500 uppercase tracking-wider">{title}</span>
-      <div
-        className={`rounded-2xl shadow-md flex items-end justify-center pb-3 transition-transform hover:scale-105 ${
-          isMain ? 'w-24 h-24 sm:w-32 sm:h-32 shadow-xl z-10 border-4 border-white/20' : 'w-20 h-20 sm:w-24 sm:h-24'
-        }`}
-        style={{ backgroundColor: color }}
-      >
-        <span className="bg-white/90 px-2 py-1 rounded text-[10px] font-mono text-gray-900 font-bold uppercase shadow-sm">
-          {color}
-        </span>
-      </div>
-    </div>
-  );
-
   return (
-    <div className="min-h-screen bg-[#f5f5f0] flex flex-col items-center justify-center p-4 sm:p-8">
+    <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center p-4 sm:p-8">
       <h1 className="text-3xl font-bold mb-8 text-gray-900 text-center">Generador de Paletas</h1>
       
       {/* Controles */}
@@ -108,7 +90,7 @@ export default function Home() {
 
         {/* Armonía */}
         <div className="flex items-center gap-3">
-          <label className="font-medium text-gray-700 text-sm uppercase tracking-wide">Tipo de Paleta</label>
+          <label className="font-medium text-gray-700 text-sm uppercase tracking-wide">Tipo</label>
           <select 
             value={harmony}
             onChange={(e) => setHarmony(e.target.value)}
@@ -122,7 +104,7 @@ export default function Home() {
           </select>
         </div>
 
-        {/* Cantidad de Colores (Se oculta si está en modo Funcional) */}
+        {/* Cantidad de Colores (Oculto en modo funcional) */}
         {harmony !== 'funcional' && (
           <>
             <div className="hidden sm:block w-px h-8 bg-gray-200"></div>
@@ -142,58 +124,43 @@ export default function Home() {
         )}
       </div>
 
-      {/* ÁREA DE RENDERIZADO CONDICIONAL */}
-      {harmony === 'funcional' ? (
-        
-        /* 1. Layout de Cruz (Funcional) */
-        <div 
-          ref={paletteRef} 
-          className="bg-[#fafaf8] p-8 sm:p-12 rounded-3xl shadow-lg mb-8 w-full max-w-2xl flex items-center justify-center border border-gray-100"
-        >
-          <div className="grid grid-cols-3 grid-rows-3 gap-2 sm:gap-6 items-center justify-items-center">
-            {/* Fila 1 */}
-            <div className="col-start-2 row-start-1">
-              <ColorBlock title="CONTRAST" color={funcColors.contrast} />
-            </div>
-            
-            {/* Fila 2 */}
-            <div className="col-start-1 row-start-2">
-              <ColorBlock title="SHADOW" color={funcColors.shadow} />
-            </div>
-            <div className="col-start-2 row-start-2">
-              <ColorBlock title="MAIN COLOR" color={funcColors.main} isMain={true} />
-            </div>
-            <div className="col-start-3 row-start-2">
-              <ColorBlock title="SIMILAR" color={funcColors.similar} />
-            </div>
-            
-            {/* Fila 3 */}
-            <div className="col-start-2 row-start-3">
-              <ColorBlock title="COMPLEMENT" color={funcColors.complement} />
-            </div>
-          </div>
-        </div>
-
-      ) : (
-
-        /* 2. Layout Lineal Tradicional (El que ya tenías) */
-        <div 
-          ref={paletteRef} 
-          className="flex w-full max-w-4xl h-48 rounded-xl overflow-hidden shadow-lg mb-8 bg-white p-2"
-        >
-          {palette.map((color, index) => (
-            <div 
-              key={index} 
-              className="flex-1 flex items-end justify-center pb-4 transition-all hover:flex-[1.5] group"
-              style={{ backgroundColor: color }}
-            >
-              <span className="bg-white/90 px-1 sm:px-2 py-1 rounded text-[10px] sm:text-xs font-mono text-gray-900 font-bold uppercase shadow-sm opacity-0 group-hover:opacity-100 sm:opacity-100 transition-opacity">
-                {color}
-              </span>
-            </div>
-          ))}
-        </div>
-      )}
+      {/* Contenedor de la Paleta Unificado (Fila horizontal para todos) */}
+      <div 
+        ref={paletteRef} 
+        className="flex w-full max-w-4xl h-48 rounded-xl overflow-hidden shadow-lg mb-8 bg-white p-2"
+      >
+        {harmony === 'funcional' 
+          ? /* Renderizado en fila para la paleta Funcional */
+            funcColors.map((item, index) => (
+              <div 
+                key={index} 
+                className="flex-1 flex flex-col items-center justify-end pb-4 transition-all hover:flex-[1.5] group"
+                style={{ backgroundColor: item.hex }}
+              >
+                <div className="flex flex-col items-center gap-1 opacity-0 group-hover:opacity-100 sm:opacity-100 transition-opacity">
+                  <span className="bg-black/50 text-white px-2 py-0.5 rounded text-[9px] font-bold uppercase tracking-widest shadow-sm">
+                    {item.label}
+                  </span>
+                  <span className="bg-white/90 px-2 py-1 rounded text-[10px] sm:text-xs font-mono text-gray-900 font-bold uppercase shadow-sm">
+                    {item.hex}
+                  </span>
+                </div>
+              </div>
+            ))
+          : /* Renderizado estándar para el resto */
+            palette.map((color, index) => (
+              <div 
+                key={index} 
+                className="flex-1 flex items-end justify-center pb-4 transition-all hover:flex-[1.5] group"
+                style={{ backgroundColor: color }}
+              >
+                <span className="bg-white/90 px-1 sm:px-2 py-1 rounded text-[10px] sm:text-xs font-mono text-gray-900 font-bold uppercase shadow-sm opacity-0 group-hover:opacity-100 sm:opacity-100 transition-opacity">
+                  {color}
+                </span>
+              </div>
+            ))
+        }
+      </div>
 
       {/* Botón de Exportar */}
       <button 
