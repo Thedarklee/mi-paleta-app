@@ -7,61 +7,51 @@ import { toPng } from 'html-to-image';
 export default function Home() {
   const [baseColor, setBaseColor] = useState('#3b82f6');
   const [harmony, setHarmony] = useState('monocromatico');
+  const [colorCount, setColorCount] = useState(5); // Nuevo estado para la cantidad
   const paletteRef = useRef(null);
 
-  // Función para generar la paleta según la regla de teoría del color elegida
-  const generatePalette = (color, rule) => {
+  // Función actualizada: ahora genera N colores dinámicamente usando escalas
+  const generatePalette = (color, rule, count) => {
     try {
       const c = chroma(color);
       
       switch (rule) {
         case 'monocromatico':
-          // Escala de claro a oscuro del mismo tono
-          return chroma.scale(['white', color, 'black']).mode('lch').colors(7).slice(1, 6);
+          // Escala del color aclarado al color oscurecido
+          return chroma.scale([c.brighten(2.5), c, c.darken(2.5)])
+                       .mode('lch')
+                       .colors(count);
           
         case 'analogo':
-          // Colores vecinos en la rueda de color (-60, -30, 0, +30, +60 grados)
-          return [
-            c.set('hsl.h', '-60').hex(),
-            c.set('hsl.h', '-30').hex(),
-            c.hex(),
-            c.set('hsl.h', '+30').hex(),
-            c.set('hsl.h', '+60').hex()
-          ];
+          // Escala entre los vecinos (-60 y +60 grados en el círculo cromático)
+          return chroma.scale([c.set('hsl.h', '-60'), c, c.set('hsl.h', '+60')])
+                       .mode('lch')
+                       .colors(count);
           
         case 'complementario':
-          // El opuesto (+180 grados) y variaciones de luz para completar 5 colores
+          // Escala del color base a su opuesto, pasando por un gris claro para que no se vea "sucio"
           const comp = c.set('hsl.h', '+180');
-          return [
-            c.brighten(1).hex(),
-            c.hex(),
-            chroma.mix(c, comp, 0.5).hex(), // Un tono neutro mezclado en el medio
-            comp.hex(),
-            comp.darken(1).hex()
-          ];
+          return chroma.scale([c, '#f3f4f6', comp])
+                       .mode('lch')
+                       .colors(count);
           
         case 'triadico':
-          // Tres colores equidistantes (+120 y +240 grados) más variaciones
+          // Escala pasando por los tres puntos equidistantes
           const t1 = c.set('hsl.h', '+120');
           const t2 = c.set('hsl.h', '+240');
-          return [
-            c.brighten(0.5).hex(),
-            c.hex(),
-            t1.hex(),
-            t2.hex(),
-            t2.darken(0.8).hex()
-          ];
+          return chroma.scale([c, t1, t2])
+                       .mode('lch')
+                       .colors(count);
           
         default:
-          return Array(5).fill(color);
+          return Array(count).fill(color);
       }
     } catch (error) {
-      // Por si el usuario borra el input del hex o mete algo inválido
-      return Array(5).fill('#cccccc');
+      return Array(count).fill('#cccccc');
     }
   };
 
-  const palette = generatePalette(baseColor, harmony);
+  const palette = generatePalette(baseColor, harmony, colorCount);
 
   const handleExport = () => {
     if (paletteRef.current === null) return;
@@ -69,7 +59,7 @@ export default function Home() {
     toPng(paletteRef.current, { cacheBust: true })
       .then((dataUrl) => {
         const link = document.createElement('a');
-        link.download = `paleta-${harmony}.png`;
+        link.download = `paleta-${harmony}-${colorCount}.png`;
         link.href = dataUrl;
         link.click();
       })
@@ -79,11 +69,13 @@ export default function Home() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center p-8">
-      <h1 className="text-3xl font-bold mb-8 text-gray-900">Generador de Paletas</h1>
+    <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center p-4 sm:p-8">
+      <h1 className="text-3xl font-bold mb-8 text-gray-900 text-center">Generador de Paletas</h1>
       
-      {/* Controles: Selector de Color y Regla */}
-      <div className="mb-8 flex flex-col sm:flex-row items-center gap-6 bg-white p-4 rounded-xl shadow-sm border border-gray-100">
+      {/* Controles: Selector de Color, Regla y Cantidad */}
+      <div className="mb-8 flex flex-col sm:flex-row flex-wrap justify-center items-center gap-6 bg-white p-4 rounded-xl shadow-sm border border-gray-100">
+        
+        {/* Color Base */}
         <div className="flex items-center gap-3">
           <label className="font-medium text-gray-700 text-sm uppercase tracking-wide">Color Base</label>
           <input 
@@ -96,12 +88,13 @@ export default function Home() {
         
         <div className="hidden sm:block w-px h-8 bg-gray-200"></div>
 
+        {/* Armonía */}
         <div className="flex items-center gap-3">
           <label className="font-medium text-gray-700 text-sm uppercase tracking-wide">Armonía</label>
           <select 
             value={harmony}
             onChange={(e) => setHarmony(e.target.value)}
-            className="border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring-blue-500 bg-gray-50 p-2"
+            className="border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring-blue-500 bg-gray-50 p-2 outline-none"
           >
             <option value="monocromatico">Monocromático</option>
             <option value="analogo">Análogo</option>
@@ -109,20 +102,37 @@ export default function Home() {
             <option value="triadico">Triádico</option>
           </select>
         </div>
+
+        <div className="hidden sm:block w-px h-8 bg-gray-200"></div>
+
+        {/* Cantidad de Colores */}
+        <div className="flex items-center gap-3">
+          <label className="font-medium text-gray-700 text-sm uppercase tracking-wide">Colores</label>
+          <select 
+            value={colorCount}
+            onChange={(e) => setColorCount(Number(e.target.value))}
+            className="border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring-blue-500 bg-gray-50 p-2 outline-none"
+          >
+            {[5, 6, 7, 8, 9, 10].map(num => (
+              <option key={num} value={num}>{num}</option>
+            ))}
+          </select>
+        </div>
+
       </div>
 
       {/* Contenedor de la Paleta (Este es el que se exporta) */}
       <div 
         ref={paletteRef} 
-        className="flex w-full max-w-2xl h-48 rounded-xl overflow-hidden shadow-lg mb-8 bg-white p-2"
+        className="flex w-full max-w-4xl h-48 rounded-xl overflow-hidden shadow-lg mb-8 bg-white p-2"
       >
         {palette.map((color, index) => (
           <div 
             key={index} 
-            className="flex-1 flex items-end justify-center pb-4 transition-all hover:flex-[1.2]"
+            className="flex-1 flex items-end justify-center pb-4 transition-all hover:flex-[1.5] group"
             style={{ backgroundColor: color }}
           >
-            <span className="bg-white/90 px-2 py-1 rounded text-sm font-mono text-gray-900 font-bold uppercase shadow-sm">
+            <span className="bg-white/90 px-1 sm:px-2 py-1 rounded text-[10px] sm:text-xs font-mono text-gray-900 font-bold uppercase shadow-sm opacity-0 group-hover:opacity-100 sm:opacity-100 transition-opacity">
               {color}
             </span>
           </div>
