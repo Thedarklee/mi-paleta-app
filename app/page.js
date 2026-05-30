@@ -88,16 +88,19 @@ export default function Home() {
       {/* Contenedor Principal de Controles */}
       <div className="mb-8 flex flex-col lg:flex-row items-center lg:items-start gap-8 bg-white p-6 rounded-2xl shadow-sm border border-gray-100 w-full max-w-4xl">
         
-        {/* Columna Izquierda */}
+        {/* Columna Izquierda: Selectores de Modo y Color */}
         <div className="flex flex-col gap-6 w-full lg:w-1/2">
+          {/* Armonía y Cantidad */}
           <div className="flex flex-col sm:flex-row gap-4">
             <div className="flex-1 flex flex-col gap-2">
               <label className="font-medium text-gray-700 text-xs uppercase tracking-wide">Tipo de Paleta</label>
               <select 
                 value={harmony}
                 onChange={(e) => setHarmony(e.target.value)}
+                /* Se agregó text-gray-900 explícito aquí */
                 className="border-gray-300 rounded-lg shadow-sm focus:border-blue-500 focus:ring-blue-500 bg-gray-50 text-gray-900 p-2.5 outline-none w-full"
               >
+                {/* Se agregó text-gray-900 y bg-white a cada opción */}
                 <option value="funcional" className="text-gray-900 bg-white">Funcional (RYB)</option>
                 <option value="monocromatico" className="text-gray-900 bg-white">Monocromático</option>
                 <option value="analogo" className="text-gray-900 bg-white">Análogo</option>
@@ -112,9 +115,11 @@ export default function Home() {
                 <select 
                   value={colorCount}
                   onChange={(e) => setColorCount(Number(e.target.value))}
+                  /* Se agregó text-gray-900 explícito aquí */
                   className="border-gray-300 rounded-lg shadow-sm focus:border-blue-500 focus:ring-blue-500 bg-gray-50 text-gray-900 p-2.5 outline-none w-full"
                 >
                   {[5, 6, 7, 8, 9, 10].map(num => (
+                    /* Se agregó text-gray-900 y bg-white a cada opción */
                     <option key={num} value={num} className="text-gray-900 bg-white">{num}</option>
                   ))}
                 </select>
@@ -122,6 +127,7 @@ export default function Home() {
             )}
           </div>
 
+          {/* Color Picker Nativo + Hex */}
           <div className="flex items-center gap-4 bg-gray-50 p-3 rounded-xl border border-gray-100">
             <input 
               type="color" 
@@ -136,14 +142,16 @@ export default function Home() {
           </div>
         </div>
 
+        {/* Separador (solo en escritorio) */}
         <div className="hidden lg:block w-px h-32 bg-gray-200"></div>
 
-        {/* Columna Derecha */}
+        {/* Columna Derecha: Deslizadores RGB/RYB */}
         <div className="flex flex-col gap-4 w-full lg:w-1/2">
           <label className="font-medium text-gray-700 text-xs uppercase tracking-wide">
             Ajuste Fino ({harmony === 'funcional' ? 'RYB' : 'RGB'})
           </label>
           
+          {/* Deslizador R (Rojo) */}
           <div className="flex items-center gap-3">
             <span className="w-4 text-sm font-bold text-gray-500">R</span>
             <input 
@@ -154,6 +162,7 @@ export default function Home() {
             <span className="w-8 text-sm font-mono text-right text-gray-600">{r}</span>
           </div>
 
+          {/* Deslizador G/Y (Verde o Amarillo) */}
           <div className="flex items-center gap-3">
             <span className="w-4 text-sm font-bold text-gray-500">
               {harmony === 'funcional' ? 'Y' : 'G'}
@@ -166,6 +175,7 @@ export default function Home() {
             <span className="w-8 text-sm font-mono text-right text-gray-600">{g}</span>
           </div>
 
+          {/* Deslizador B (Azul) */}
           <div className="flex items-center gap-3">
             <span className="w-4 text-sm font-bold text-gray-500">B</span>
             <input 
@@ -190,8 +200,7 @@ export default function Home() {
                 className="flex-1 flex flex-col items-center justify-end pb-4 transition-all hover:flex-[1.3] group"
                 style={{ backgroundColor: item.hex }}
               >
-                {/* SE ELIMINÓ sm:opacity-100 AQUÍ */}
-                <div className="flex flex-col items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                <div className="flex flex-col items-center gap-1 opacity-0 group-hover:opacity-100 sm:opacity-100 transition-opacity">
                   <span className="bg-black/40 backdrop-blur-sm text-white px-2 py-0.5 rounded text-[9px] font-bold uppercase tracking-widest shadow-sm">
                     {item.label}
                   </span>
@@ -207,8 +216,7 @@ export default function Home() {
                 className="flex-1 flex items-end justify-center pb-4 transition-all hover:flex-[1.3] group"
                 style={{ backgroundColor: color }}
               >
-                {/* SE ELIMINÓ sm:opacity-100 AQUÍ */}
-                <span className="bg-white/95 px-1 sm:px-2 py-1 rounded text-[10px] sm:text-xs font-mono text-gray-900 font-bold uppercase shadow-sm opacity-0 group-hover:opacity-100 transition-opacity">
+                <span className="bg-white/95 px-1 sm:px-2 py-1 rounded text-[10px] sm:text-xs font-mono text-gray-900 font-bold uppercase shadow-sm opacity-0 group-hover:opacity-100 sm:opacity-100 transition-opacity">
                   {color}
                 </span>
               </div>
