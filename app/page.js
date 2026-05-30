@@ -1,4 +1,7 @@
+
 // pages/index.js (o app/page.js dependiendo de tu versión de Next.js)
+"use client"; // <--- ESTA ES LA LÍNEA MÁGICA QUE FALTA
+
 import { useState, useRef } from 'react';
 import chroma from 'chroma-js';
 import { toPng } from 'html-to-image';
