@@ -11,17 +11,17 @@ export default function Home() {
   
   const [activeColor, setActiveColor] = useState(null);
   const [isExporting, setIsExporting] = useState(false);
+  const [isCopied, setIsCopied] = useState(false); // Estado para el botón de copiar
   
-  // --- NUEVOS ESTADOS PARA GUARDAR PALETAS ---
+  // --- ESTADOS PARA GUARDAR PALETAS ---
   const [savedPalettes, setSavedPalettes] = useState([]);
   const [paletteName, setPaletteName] = useState('');
-  const [isMounted, setIsMounted] = useState(false); // Evita errores de hidratación en Next.js
+  const [isMounted, setIsMounted] = useState(false);
   
   const paletteRef = useRef(null);
 
   const [r, g, b] = chroma.valid(baseColor) ? chroma(baseColor).rgb() : [0, 0, 0];
 
-  // --- CARGAR PALETAS AL INICIAR ---
   useEffect(() => {
     setIsMounted(true);
     const saved = JSON.parse(localStorage.getItem('mis_paletas') || '[]');
@@ -65,7 +65,23 @@ export default function Home() {
   const palette = generatePalette(baseColor, harmony, colorCount);
   const funcColors = getFunctionalColors(baseColor);
 
-  // --- FUNCIONES DE GUARDADO LOCAL ---
+  // --- COPIAR AL PORTAPAPELES ---
+  const handleCopyColors = () => {
+    let textToCopy = '';
+    
+    if (harmony === 'funcional') {
+      textToCopy = funcColors.map(c => `${c.label}: ${c.hex}`).join('\n');
+    } else {
+      textToCopy = palette.join(', ');
+    }
+
+    navigator.clipboard.writeText(textToCopy).then(() => {
+      setIsCopied(true);
+      setTimeout(() => setIsCopied(false), 2000); // Vuelve a la normalidad en 2 segundos
+    });
+  };
+
+  // --- GUARDADO LOCAL ---
   const handleSavePalette = () => {
     if (!paletteName.trim()) return;
     
@@ -75,21 +91,20 @@ export default function Home() {
       baseColor,
       harmony,
       colorCount,
-      // Guardamos un preview visual rápido dependiendo del modo
       previewColors: harmony === 'funcional' ? funcColors.map(c => c.hex) : palette 
     };
 
     const updatedPalettes = [newPalette, ...savedPalettes];
     setSavedPalettes(updatedPalettes);
     localStorage.setItem('mis_paletas', JSON.stringify(updatedPalettes));
-    setPaletteName(''); // Limpia el input
+    setPaletteName('');
   };
 
   const loadSavedPalette = (savedItem) => {
     setBaseColor(savedItem.baseColor);
     setHarmony(savedItem.harmony);
     setColorCount(savedItem.colorCount);
-    window.scrollTo({ top: 0, behavior: 'smooth' }); // Sube la pantalla suavemente
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   const deleteSavedPalette = (id) => {
@@ -116,7 +131,6 @@ export default function Home() {
     }, 150);
   };
 
-  // Prevenir renderizado de la lista hasta que el componente esté montado (Next.js fix)
   if (!isMounted) return null;
 
   return (
@@ -188,12 +202,14 @@ export default function Home() {
         }
       </div>
 
-      {/* Acciones: Guardar y Exportar */}
-      <div className="flex flex-col sm:flex-row w-full max-w-4xl gap-4 mb-16">
-        <div className="flex-1 flex items-center bg-white p-2 rounded-xl shadow-sm border border-gray-200 focus-within:ring-2 focus-within:ring-blue-500 focus-within:border-blue-500 transition-all">
+      {/* Acciones: Guardar, Copiar y Exportar */}
+      <div className="flex flex-col lg:flex-row w-full max-w-4xl gap-4 mb-16 justify-between items-center">
+        
+        {/* Sección Izquierda: Input Guardar */}
+        <div className="w-full lg:w-1/2 flex items-center bg-white p-2 rounded-xl shadow-sm border border-gray-200 focus-within:ring-2 focus-within:ring-blue-500 focus-within:border-blue-500 transition-all">
           <input 
             type="text" 
-            placeholder='Ej: "Paleta Uriel"' 
+            placeholder='Ej: "Paleta UI Mobile"' 
             value={paletteName}
             onChange={(e) => setPaletteName(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && handleSavePalette()}
@@ -208,13 +224,33 @@ export default function Home() {
           </button>
         </div>
 
-        <button 
-          onClick={handleExport}
-          disabled={isExporting}
-          className="bg-gray-900 text-white px-8 py-3 rounded-xl font-medium hover:bg-gray-800 transition-all shadow-md hover:shadow-lg hover:-translate-y-0.5 disabled:opacity-50 disabled:cursor-not-allowed flex-shrink-0"
-        >
-          {isExporting ? 'Procesando...' : 'Exportar a PNG'}
-        </button>
+        {/* Sección Derecha: Copiar y Exportar */}
+        <div className="flex flex-col sm:flex-row gap-3 w-full lg:w-auto">
+          <button 
+            onClick={handleCopyColors}
+            className="bg-white text-gray-800 border border-gray-200 px-6 py-3 rounded-xl font-medium hover:bg-gray-50 transition-all shadow-sm flex items-center justify-center gap-2 w-full sm:w-auto"
+          >
+            {isCopied ? (
+              <>
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-green-500"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                ¡Copiado!
+              </>
+            ) : (
+              <>
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-gray-500"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+                Copiar HEX
+              </>
+            )}
+          </button>
+
+          <button 
+            onClick={handleExport}
+            disabled={isExporting}
+            className="bg-gray-900 text-white px-8 py-3 rounded-xl font-medium hover:bg-gray-800 transition-all shadow-md flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed w-full sm:w-auto"
+          >
+            {isExporting ? 'Procesando...' : 'Exportar PNG'}
+          </button>
+        </div>
       </div>
 
       {/* Sección de Paletas Guardadas */}
@@ -238,7 +274,6 @@ export default function Home() {
                   </button>
                 </div>
                 
-                {/* Mini-preview de los colores */}
                 <div className="flex h-12 rounded-lg overflow-hidden mb-4 border border-gray-50 cursor-pointer" onClick={() => loadSavedPalette(saved)}>
                   {saved.previewColors.map((colorHex, i) => (
                     <div key={i} className="flex-1" style={{ backgroundColor: colorHex }}></div>
